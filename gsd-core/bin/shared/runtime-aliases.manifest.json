@@ -81,5 +81,10 @@
     "pi",
     "pi-coding-agent",
     "pi-agent"
+  ],
+  "junie": [
+    "junie",
+    "jetbrains-junie",
+    "junie-cli"
   ]
 }

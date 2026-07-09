@@ -1,0 +1,103 @@
+{
+  "id": "junie",
+  "role": "runtime",
+  "version": "1.7.0-rc.4",
+  "title": "JetBrains Junie",
+  "description": "JetBrains Junie CLI (junie.jetbrains.com; CLI beta 2026-03). User config home is ~/.junie/ per Junie CLI docs — Junie documents NO env override for relocating that directory (JUNIE_CONFIG_LOCATION only adds an extra config file), so the JUNIE_HOME entry under configHome.env is gsd-core-local plumbing that redirects GSD-managed installer writes only (FACTORY_HOME precedent); Junie itself does not recognise it. Skills use the open Agent Skills format (skills/<name>/SKILL.md, Claude-compatible; project beats user on name conflict). Custom slash commands are flat .md files under commands/ with a description frontmatter — NOTE: Junie interpolates named $argumentName placeholders, not $ARGUMENTS, so GSD command bodies are emitted verbatim and their $ARGUMENTS token is passed through uninterpolated (documented limitation). Subagents are flat .md files under agents/ with near-Claude frontmatter (description required; name/tools/mcpServers/model optional) — emitted verbatim per the zcode precedent. Junie hooks live under a 'hooks' key in ~/.junie/config.json (7 events: SessionStart, UserPromptSubmit, PreToolUse, Stop, StopFailure, PermissionRequest, SessionEnd — no PostToolUse); supporting them requires a dedicated junie-config-json hooks/install surface (new validator enums + writer + golden-parity coverage), so v1 ships artifact-only (hooksSurface none, installSurface profile-marker-only) and hook registration is deferred. Project instructions: .junie/AGENTS.md, root AGENTS.md, legacy .junie/guidelines.md. MCP via .junie/mcp/mcp.json. Tier-2 support (parity eligibility, not primary).",
+  "tier": "core",
+  "requires": [],
+  "engines": {
+    "gsd": ">=1.6.0"
+  },
+  "runtime": {
+    "configHome": {
+      "kind": "dot-home",
+      "name": ".junie",
+      "env": [
+        "JUNIE_HOME"
+      ]
+    },
+    "localConfigDir": ".junie",
+    "configFormat": "none",
+    "artifactLayout": {
+      "global": [
+        {
+          "kind": "skills",
+          "destSubpath": "skills",
+          "prefix": "gsd-",
+          "nesting": "nested",
+          "recursive": false,
+          "converter": "convertClaudeCommandToClaudeSkill"
+        },
+        {
+          "kind": "commands",
+          "destSubpath": "commands",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": null
+        },
+        {
+          "kind": "agents",
+          "destSubpath": "agents",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": null
+        }
+      ],
+      "local": [
+        {
+          "kind": "skills",
+          "destSubpath": "skills",
+          "prefix": "gsd-",
+          "nesting": "nested",
+          "recursive": false,
+          "converter": "convertClaudeCommandToClaudeSkill"
+        },
+        {
+          "kind": "commands",
+          "destSubpath": "commands",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": null
+        },
+        {
+          "kind": "agents",
+          "destSubpath": "agents",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": null
+        }
+      ]
+    },
+    "commandStyle": "slash-hyphen",
+    "hooksSurface": "none",
+    "hookEvents": "claude",
+    "sandboxTier": "none",
+    "supportTier": 2,
+    "installSurface": "profile-marker-only",
+    "writesSharedSettings": false,
+    "permissionWriter": null,
+    "extendedHookEvents": [],
+    "hostIntegration": {
+      "embeddingMode": "declarative",
+      "commandSurface": "slash-file",
+      "dispatch": {
+        "namedDispatch": "undocumented",
+        "nested": "undocumented",
+        "maxDepth": "undocumented",
+        "background": "undocumented",
+        "subagentToolkit": "full",
+        "backgroundDispatch": false
+      },
+      "modelMode": "active",
+      "hookBus": "host",
+      "stateIO": "filesystem",
+      "transport": "mcp",
+      "runtime": "other"
+    }
+  }
+}

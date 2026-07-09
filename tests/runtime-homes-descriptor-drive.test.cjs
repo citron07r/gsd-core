@@ -60,7 +60,7 @@ const ALL_ENV_KEYS = [
   'WINDSURF_CONFIG_DIR', 'AUGMENT_CONFIG_DIR', 'TRAE_CONFIG_DIR', 'QWEN_CONFIG_DIR',
   'HERMES_HOME', 'CODEBUDDY_CONFIG_DIR', 'CLINE_CONFIG_DIR', 'KIMI_CONFIG_DIR',
   'OPENCODE_CONFIG_DIR', 'OPENCODE_CONFIG', 'KILO_CONFIG_DIR', 'KILO_CONFIG',
-  'XDG_CONFIG_HOME', 'FACTORY_HOME', 'PI_CODING_AGENT_DIR',
+  'XDG_CONFIG_HOME', 'FACTORY_HOME', 'PI_CODING_AGENT_DIR', 'JUNIE_HOME',
 ];
 
 function clearAllEnvKeys() {
@@ -104,6 +104,7 @@ const GOLDEN_DEFAULTS = {
   zcode:       path.join(HOME, '.zcode'),
   droid:       path.join(HOME, '.factory'),
   pi:          path.join(HOME, '.pi', 'agent'),
+  junie:       path.join(HOME, '.junie'),
 };
 
 // ── GOLDEN DEFAULTS ────────────────────────────────────────────────────────────
@@ -161,6 +162,7 @@ describe('descriptor-driven equivalence: env-var overrides', () => {
     { runtime: 'kilo',      envKey: 'KILO_CONFIG_DIR',      value: '/custom/kilo' },
     { runtime: 'droid',     envKey: 'FACTORY_HOME',     value: '/custom/droid' },
     { runtime: 'pi',        envKey: 'PI_CODING_AGENT_DIR', value: '/custom/pi-agent' },
+    { runtime: 'junie',     envKey: 'JUNIE_HOME',       value: '/custom/junie' },
   ];
 
   for (const { runtime, envKey, value } of cases) {

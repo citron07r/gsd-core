@@ -1,0 +1,4 @@
+---
+type: Added
+---
+**JetBrains Junie is now an installable runtime** — `gsd-core --junie` lands GSD skills at `~/.junie/skills/<name>/SKILL.md` (open Agent Skills format), slash commands under `~/.junie/commands/`, and subagents under `~/.junie/agents/` (near-Claude frontmatter, emitted verbatim). Junie ships as a pure declarative capability descriptor (`capabilities/junie/capability.json`) with zero hardcoded `runtime === 'junie'` branches. Known limitations recorded in the descriptor: Junie interpolates `$argumentName` placeholders (not `$ARGUMENTS`), and Junie hook registration (a `hooks` key in `~/.junie/config.json`, Claude-like dialect without PostToolUse) is deferred to a dedicated junie-config-json surface. The gsd-local `JUNIE_HOME` env var redirects installer writes (used by tests to stay out of `~/.junie`).

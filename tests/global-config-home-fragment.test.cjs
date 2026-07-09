@@ -49,6 +49,7 @@ const GOLDEN_FRAGMENT_MAP = {
   zcode:     "'.zcode'",
   droid:     "'.factory'",
   pi:        "'.pi', 'agent'",
+  junie:     "'.junie'",
 };
 
 // Runtimes intentionally NOT in the table: claude is the default; antigravity is

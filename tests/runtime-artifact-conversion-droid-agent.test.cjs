@@ -40,7 +40,7 @@ describe('runtime-artifact-conversion droid agent rewrite (R5)', () => {
       'Use `mcp__context7__resolve-library-id` to look up library docs.',
     ].join('\n');
     const out = convertClaudeAgentToDroidAgent(input);
-    const fmMatch = out.match(/^---\n([\s\S]*?)\n---/);
+    const fmMatch = out.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     assert.ok(fmMatch, 'output must keep YAML frontmatter');
     const fm = fmMatch[1];
 
@@ -49,7 +49,7 @@ describe('runtime-artifact-conversion droid agent rewrite (R5)', () => {
     assert.doesNotMatch(fm, /\*$/m, 'no wildcard tokens left in tools array');
 
     // Tools array only contains Factory-valid IDs that were in source list.
-    const toolsLine = fm.split('\n').find((l) => l.startsWith('tools:'));
+    const toolsLine = fm.split(/\r?\n/).find((l) => l.startsWith('tools:'));
     assert.match(toolsLine, /\["Read", "Edit", "Grep", "Glob"\]/);
     assert.doesNotMatch(toolsLine, /\bWrite\b|\bBash\b|\bSkill\b/, 'Claude-only tool IDs dropped');
   });
@@ -63,7 +63,7 @@ describe('runtime-artifact-conversion droid agent rewrite (R5)', () => {
       '---',
     ].join('\n');
     const out = convertClaudeAgentToDroidAgent(input);
-    const fmMatch = out.match(/^---\n([\s\S]*?)\n---/);
+    const fmMatch = out.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     const fm = fmMatch[1];
     assert.match(fm, /^mcpServers: \["context7", "firecrawl", "exa", "tavily"\]$/m);
   });
@@ -80,7 +80,7 @@ describe('runtime-artifact-conversion droid agent rewrite (R5)', () => {
       'Take a screenshot via `mcp__playwright__screenshot(name="desktop", width=1440)`.',
     ].join('\n');
     const out = convertClaudeAgentToDroidAgent(input);
-    const fmMatch = out.match(/^---\n([\s\S]*?)\n---/);
+    const fmMatch = out.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     const fm = fmMatch[1];
     assert.match(fm, /^mcpServers: \["playwright"\]$/m, 'playwright MCP server added from body scan');
   });
@@ -89,8 +89,8 @@ describe('runtime-artifact-conversion droid agent rewrite (R5)', () => {
     const long = 'A'.repeat(800);
     const input = `---\nname: gsd-huge\ndescription: ${long}\ntools: Read\n---`;
     const out = convertClaudeAgentToDroidAgent(input);
-    const fm = out.match(/^---\n([\s\S]*?)\n---/)[1];
-    const descLine = fm.split('\n').find((l) => l.startsWith('description:'));
+    const fm = out.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1];
+    const descLine = fm.split(/\r?\n/).find((l) => l.startsWith('description:'));
     // Strip surrounding quotes; the actual string content must be ≤500 chars.
     const inner = descLine.slice('description:'.length).trim().replace(/^"|"$/g, '');
     assert.ok(inner.length <= 500, `description length ${inner.length} exceeded 500 cap`);
@@ -106,7 +106,7 @@ describe('runtime-artifact-conversion droid agent rewrite (R5)', () => {
       '---',
     ].join('\n');
     const out = convertClaudeAgentToDroidAgent(input);
-    const fm = out.match(/^---\n([\s\S]*?)\n---/)[1];
+    const fm = out.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1];
     assert.doesNotMatch(fm, /^tools:/m, 'no tools line emitted when source has no Factory IDs');
     assert.doesNotMatch(fm, /^mcpServers:/m);
   });
@@ -114,7 +114,7 @@ describe('runtime-artifact-conversion droid agent rewrite (R5)', () => {
   test('omits `description:` line when field is absent (still emits name: + valid YAML)', () => {
     const input = '---\nname: gsd-nodev\ntools: Read, Grep\n---\nbody';
     const out = convertClaudeAgentToDroidAgent(input);
-    const fm = out.match(/^---\n([\s\S]*?)\n---/)[1];
+    const fm = out.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1];
     assert.match(fm, /^name: gsd-nodev$/m);
     assert.doesNotMatch(fm, /^description:/m);
     assert.match(fm, /^tools: \["Read", "Grep"\]$/m);
@@ -130,7 +130,7 @@ describe('runtime-artifact-conversion droid agent rewrite (R5)', () => {
     const input = `---\nname: gsd-issue\ndescription: Issue helper\ntools: Read, mcp__linear__*\n---${body}`;
     const out = convertClaudeAgentToDroidAgent(input);
     assert.ok(out.endsWith(body), 'body must pass through unchanged');
-    const fm = out.match(/^---\n([\s\S]*?)\n---/)[1];
+    const fm = out.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1];
     assert.match(fm, /^mcpServers: \["linear"\]$/m);
   });
 
@@ -158,15 +158,15 @@ describe('runtime-artifact-conversion droid agent rewrite (R5)', () => {
   test('normalizes uppercase/spaced source name to Factory lowercase identifier', () => {
     const input = '---\nname: GSD Phase Researcher\ndescription: x\ntools: Read\n---\nbody';
     const out = convertClaudeAgentToDroidAgent(input);
-    const fm = out.match(/^---\n([\s\S]*?)\n---/)[1];
+    const fm = out.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1];
     assert.match(fm, /^name: gsd-phase-researcher$/m);
   });
 
   test('collapses a multiline description into a single line before truncation', () => {
     const input = '---\nname: gsd-multi\ndescription: "line one\\nline two   with   spaces"\ntools: Read\n---\nbody';
     const out = convertClaudeAgentToDroidAgent(input);
-    const fm = out.match(/^---\n([\s\S]*?)\n---/)[1];
-    const descLine = fm.split('\n').find((l) => l.startsWith('description:'));
+    const fm = out.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1];
+    const descLine = fm.split(/\r?\n/).find((l) => l.startsWith('description:'));
     assert.doesNotMatch(descLine, /\n/, 'description must be single-line');
     assert.doesNotMatch(descLine, /\s{2,}/, 'inner whitespace collapsed');
   });

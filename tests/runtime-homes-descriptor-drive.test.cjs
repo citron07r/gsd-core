@@ -898,7 +898,7 @@ describe('runtime-homes-descriptor-drive droid dot-home resolution (R6)', () => 
     const saved = clearAllEnvKeys();
     process.env['FACTORY_HOME'] = '/custom/droid';
     try {
-      assert.strictEqual(getGlobalConfigDir('droid'), '/custom/droid');
+      assert.strictEqual(String(getGlobalConfigDir('droid')).replace(/\\/g, '/'), '/custom/droid');
     } finally {
       restoreEnvKeys(saved);
     }

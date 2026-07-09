@@ -23,6 +23,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 
 const ROOT = path.join(__dirname, '..');
+const { cleanup } = require('./helpers.cjs');
 const hooks = require(path.join(ROOT, 'gsd-core', 'bin', 'lib', 'runtime-hooks-surface.cjs'));
 const { applySettingsJsonHooks } = hooks;
 
@@ -34,7 +35,7 @@ const DROID_DESC = JSON.parse(
 // the install logic actually needs for R7 acceptance. We pass null for the
 // hook files we don't need for the R7 assertions — applySettingsJsonHooks
 // simply skips the non-installed hooks per the #1754 guard.
-function buildDroidInstallOpts(targetDir, { withCommands = true, preToolUse = 'PreToolUse' } = {}) {
+function buildDroidInstallOpts(targetDir, { withCommands = true } = {}) {
   return {
     runtime: 'droid',
     isGlobal: false,
@@ -57,10 +58,6 @@ function buildDroidInstallOpts(targetDir, { withCommands = true, preToolUse = 'P
 
 function mkProjectDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-droid-install-'));
-}
-
-function cleanup(dir) {
-  try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ }
 }
 
 // ---------------------------------------------------------------------------

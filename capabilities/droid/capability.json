@@ -1,0 +1,95 @@
+{
+  "id": "droid",
+  "role": "runtime",
+  "version": "1.7.0-rc.4",
+  "title": "Droid (Factory AI)",
+  "description": "Factory AI Droid CLI (https://docs.factory.ai). Config home HARDCODED to ~/.factory/ on mac/linux and %USERPROFILE%\\.factory\\ on Windows per Factory docs — NO documented Factory env override for the config dir itself. Factory-documented env vars (NOT config-dir overrides): FACTORY_API_KEY (authentication credential per Factory auth docs) and DROID_PLUGIN_ROOT (per Factory plugin docs, expanded INSIDE plugin hooks.json command strings — e.g. '${DROID_PLUGIN_ROOT}/hooks/format.sh' resolves to the plugin dir when the hook runs; NOT a general CLI env override). The FACTORY_HOME entry under configHome.env is gsd-core-local plumbing that redirects GSD-managed installer writes only — Factory CLI itself does NOT recognise it, only AUTH (FACTORY_API_KEY) and PLUGIN-INTERIOR (DROID_PLUGIN_ROOT) are real per Factory docs. Hook events on settings.json keys use the Claude dialect (SessionStart, PreToolUse, PostToolUse, Notification, UserPromptSubmit, Stop, SubagentStop, PreCompact, SessionEnd) per Factory hooks-reference. Slash invocations: BOTH routes emitted by GSD — modern ~/.factory/skills/<name>/SKILL.md per Factory 'merged custom slash commands into skills' (slash-invocable via /name AND model-invocable), AND existing-files ~/.factory/commands/<name>.md per Factory slash-commands doc (verbatim from doc: 'Your existing .factory/commands/ files continue to work unchanged. For new commands, consider using skills instead'). Both files coexist; Factory prefers the modern skills/ entry when both resolve. Subagent droids live at ~/.factory/droids/<name>.md (flat .md files, YAML frontmatter per Factory droid doc). GSD writes hook registrations to settings.json ONLY (not settings.local.json — that overlay is reserved for per-machine, uncommitted preferences per Factory settings docs). Tier-2 support (parity eligibility, not primary).",
+  "tier": "core",
+  "requires": [],
+  "engines": {
+    "gsd": ">=1.6.0"
+  },
+  "runtime": {
+    "configHome": {
+      "kind": "dot-home",
+      "name": ".factory",
+      "env": [
+        "FACTORY_HOME"
+      ]
+    },
+    "localConfigDir": ".factory",
+    "configFormat": "settings-json",
+    "artifactLayout": {
+      "global": [
+        {
+          "kind": "skills",
+          "destSubpath": "skills",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": "convertClaudeCommandToClaudeSkill"
+        },
+        {
+          "kind": "agents",
+          "destSubpath": "droids",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": "convertClaudeAgentToDroidAgent"
+        }
+      ],
+      "local": [
+        {
+          "kind": "skills",
+          "destSubpath": "skills",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": "convertClaudeCommandToClaudeSkill"
+        },
+        {
+          "kind": "commands",
+          "destSubpath": "commands",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": null
+        },
+        {
+          "kind": "agents",
+          "destSubpath": "droids",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": "convertClaudeAgentToDroidAgent"
+        }
+      ]
+    },
+    "commandStyle": "slash-hyphen",
+    "hooksSurface": "settings-json",
+    "hookEvents": "claude",
+    "sandboxTier": "none",
+    "supportTier": 2,
+    "installSurface": "settings-json",
+    "writesSharedSettings": true,
+    "permissionWriter": null,
+    "extendedHookEvents": [],
+    "hostIntegration": {
+      "embeddingMode": "imperative",
+      "commandSurface": "slash-file",
+      "dispatch": {
+        "namedDispatch": true,
+        "nested": "undocumented",
+        "maxDepth": "undocumented",
+        "background": "undocumented",
+        "subagentToolkit": "full",
+        "backgroundDispatch": false
+      },
+      "modelMode": "passive",
+      "hookBus": "host",
+      "stateIO": "filesystem",
+      "transport": "mcp",
+      "runtime": "node"
+    }
+  }
+}

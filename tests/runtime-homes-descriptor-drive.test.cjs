@@ -60,7 +60,7 @@ const ALL_ENV_KEYS = [
   'WINDSURF_CONFIG_DIR', 'AUGMENT_CONFIG_DIR', 'TRAE_CONFIG_DIR', 'QWEN_CONFIG_DIR',
   'HERMES_HOME', 'CODEBUDDY_CONFIG_DIR', 'CLINE_CONFIG_DIR', 'KIMI_CONFIG_DIR',
   'OPENCODE_CONFIG_DIR', 'OPENCODE_CONFIG', 'KILO_CONFIG_DIR', 'KILO_CONFIG',
-  'XDG_CONFIG_HOME',
+  'XDG_CONFIG_HOME', 'FACTORY_HOME',
 ];
 
 function clearAllEnvKeys() {
@@ -102,6 +102,7 @@ const GOLDEN_DEFAULTS = {
   opencode:    path.join(HOME, '.config', 'opencode'),
   kilo:        path.join(HOME, '.config', 'kilo'),
   zcode:       path.join(HOME, '.zcode'),
+  droid:       path.join(HOME, '.factory'),
 };
 
 // ── GOLDEN DEFAULTS ────────────────────────────────────────────────────────────
@@ -157,6 +158,7 @@ describe('descriptor-driven equivalence: env-var overrides', () => {
     { runtime: 'kimi',      envKey: 'KIMI_CONFIG_DIR',      value: '/custom/kimi' },
     { runtime: 'opencode',  envKey: 'OPENCODE_CONFIG_DIR',  value: '/custom/opencode' },
     { runtime: 'kilo',      envKey: 'KILO_CONFIG_DIR',      value: '/custom/kilo' },
+    { runtime: 'droid',     envKey: 'FACTORY_HOME',     value: '/custom/droid' },
   ];
 
   for (const { runtime, envKey, value } of cases) {
@@ -872,6 +874,73 @@ describe('descriptor-driven parity: 13 non-probe registry runtimes × no-env-var
   }
 });
 
+// ── Plan 14-03: droid dot-home descriptor-drive coverage (R6) ─────────────────
+
+describe('runtime-homes-descriptor-drive droid dot-home resolution (R6)', () => {
+  test('darwin/linux default: getGlobalConfigDir("droid") === path.join(homedir, ".factory") when FACTORY_HOME unset', () => {
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-equiv-droid-default-'));
+    try {
+      const result = resolveConfigHomeFromDescriptor(
+        { kind: 'dot-home', name: '.factory', env: ['FACTORY_HOME'] },
+        { env: {}, home: tmpHome, existsSync: () => false },
+      );
+      assert.strictEqual(result, path.join(tmpHome, '.factory'));
+    } finally {
+      cleanup(tmpHome);
+    }
+  });
+
+  test('env override: FACTORY_HOME=/custom/droid is returned as-is', () => {
+    const saved = clearAllEnvKeys();
+    process.env['FACTORY_HOME'] = '/custom/droid';
+    try {
+      assert.strictEqual(getGlobalConfigDir('droid'), '/custom/droid');
+    } finally {
+      restoreEnvKeys(saved);
+    }
+  });
+
+  test('env override via mkdtempSync: real tmp directory is honored', () => {
+    const saved = clearAllEnvKeys();
+    const tmpOverride = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-equiv-droid-override-'));
+    process.env['FACTORY_HOME'] = tmpOverride;
+    try {
+      assert.strictEqual(getGlobalConfigDir('droid'), tmpOverride);
+    } finally {
+      restoreEnvKeys(saved);
+      cleanup(tmpOverride);
+    }
+  });
+
+  test('win32 mirror: dot-home descriptor returns <winHome>.factory via resolveConfigHomeFromDescriptor', () => {
+    const winHome = 'C:\\Users\\droid';
+    const winExpected = path.join(winHome, '.factory');
+    const result = resolveConfigHomeFromDescriptor(
+      { kind: 'dot-home', name: '.factory', env: ['FACTORY_HOME'] },
+      { env: {}, home: winHome, existsSync: () => false },
+    );
+    assert.strictEqual(result, winExpected, `expected dot-home win32 mirror to be ${winExpected}; got ${result}`);
+  });
+
+  test('getGlobalSkillsBase("droid") === getGlobalConfigDir("droid") + "skills" on darwin/linux', () => {
+    const saved = clearAllEnvKeys();
+    try {
+      assert.strictEqual(getGlobalSkillsBase('droid'), path.join(HOME, '.factory', 'skills'));
+    } finally {
+      restoreEnvKeys(saved);
+    }
+  });
+
+  test('descriptor-presence invariants: capabilities/droid/capability.json matches the registry surface', () => {
+    const descPath = path.join(ROOT, 'capabilities', 'droid', 'capability.json');
+    const j = JSON.parse(fs.readFileSync(descPath, 'utf8'));
+    assert.strictEqual(j.runtime.configHome.kind, 'dot-home');
+    assert.strictEqual(j.runtime.configHome.name, '.factory');
+    assert.ok(Array.isArray(j.runtime.configHome.env), 'configHome.env must be an array');
+    assert.strictEqual(j.runtime.configHome.env.length, 1, `expected exactly one env override for droid (FACTORY_HOME); got ${JSON.stringify(j.runtime.configHome.env)}`);
+    assert.strictEqual(j.runtime.configHome.env[0], 'FACTORY_HOME');
+  });
+});
 
 // ────────────────────────────────────────────────────────────────────────
 // Folded from tests/bug-3126-global-skills-base-runtime-path.test.cjs — consolidation epic #1969 (B3 #1972)

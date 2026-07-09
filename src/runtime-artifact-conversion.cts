@@ -1983,6 +1983,243 @@ function convertClaudeAgentToAntigravityAgent(content, isGlobal = false) {
 }
 
 /**
+ * Convert a Claude Code agent (.md) to a Factory Droid subagent (.md).
+ *
+ * Models the Factory droid doc (https://docs.factory.ai/cli/configuration/droids)
+ * expectations explicitly:
+ *   - YAML frontmatter; `name` is required (lowercase letters/digits/-/_),
+ *     `description` is shown in the /droids UI (≤500 chars per doc),
+ *     `tools` is an optional comma-separated OR array of CASE-SENSITIVE
+ *     tool IDs (NO wildcards — `mcp__*__*` is INVALID per the tool-categories
+ *     table; DroidValidator surfaces an error).
+ *   - `mcpServers` is an array of MCP server names from `mcp.json` whose
+ *     registered tools should be exposed to the droid. Listing the server
+ *     names (not wildcards) gates MCP tool availability — must be used
+ *     instead of `mcp__*__*` placeholders in the `tools` field.
+ *   - Body passes through unchanged. Case 'droid' in
+ *     runtime-artifact-conversion handles post-pass `.claude/`→`.factory/`
+ *     path rewrites (see sub-token rewrites added for the droid runtime).
+ *
+ * Filtering strategy:
+ *   - MCP wildcards (`mcp__<server>__*` or anything containing `*`) are
+ *     stripped from `tools` and the captured `<server>` is added to a
+ *     deduped `mcpServers` array.
+ *   - Tool IDs are validated against the documented Factory catalog
+ *     (Read/LS/Grep/Glob + Create/Edit/ApplyPatch + Execute + WebSearch/
+ *     FetchUrl). Claude-only IDs (Write, WebFetch, NotebookEdit, Skill,
+ *     Agent, AskUserQuestion, Bash, TodoWrite, etc.) are dropped silently
+ *     — Factory uses different names (Write→Edit+Create per phase-researcher
+ *     mapping; not a 1:1 rename); drop-then-warn lets the DroidValidator
+ *     surface the rest while still emitting a valid droid .md.
+ *
+ * @param {string} content    raw Claude Code agent markdown (with YAML frontmatter)
+ * @param {boolean} _isGlobal install scope (unused — droid frontmatter is scope-neutral)
+ * @returns {string} droid .md content with cleaned frontmatter + verbatim body
+ */
+const FACTORY_DROID_TOOL_IDS = new Set([
+  'Read', 'LS', 'Grep', 'Glob',
+  'Create', 'Edit', 'ApplyPatch',
+  'Execute', 'WebSearch', 'FetchUrl',
+]);
+
+// Factory droid `tools:` field also accepts category strings (each expands to
+// the documented tool set) per the droid doc §"Tool categories".
+const FACTORY_DROID_TOOL_CATEGORIES = new Set([
+  'read-only', 'edit', 'execute', 'web', 'mcp',
+]);
+
+// `reasoningEffort` is constrained to these three values per the droid doc.
+const FACTORY_DROID_REASONING_EFFORTS = new Set(['low', 'medium', 'high']);
+
+/**
+ * Coerce an agent `name` into Factory's documented droid identifier shape:
+ * lowercase letters/digits/hyphen/underscore. Invalid runs collapse to a
+ * single hyphen; leading/trailing separators are trimmed. Falls back to
+ * `gsd-droid` when nothing valid remains.
+ */
+function normalizeDroidName(value) {
+  const lowered = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^[-_]+|[-_]+$/g, '');
+  return lowered || 'gsd-droid';
+}
+
+/** Strip YAML inline-array decoration (`[`, `]`, quotes) from a list token. */
+function stripDroidListToken(token) {
+  return String(token).replace(/^[[\s'"]+|[\]\s'"]+$/g, '').trim();
+}
+
+/**
+ * Parse a frontmatter list field (inline `field: [a, b]` or block `- a`)
+ * into a deduped array of bare string tokens.
+ */
+function parseDroidFrontmatterList(frontmatter, fieldName) {
+  if (!frontmatter) return [];
+  const lines = frontmatter.split(/\r?\n/);
+  const out = [];
+  let collecting = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (collecting) {
+      if (trimmed.startsWith('- ')) { out.push(stripDroidListToken(trimmed.slice(2))); continue; }
+      if (!trimmed) continue;
+      collecting = false;
+    }
+    if (trimmed === `${fieldName}:`) { collecting = true; continue; }
+    if (trimmed.startsWith(`${fieldName}:`)) {
+      const value = trimmed.slice(trimmed.indexOf(':') + 1).trim();
+      if (!value) { collecting = true; continue; }
+      for (const part of value.replace(/^\[|\]$/g, '').split(',')) {
+        const v = stripDroidListToken(part);
+        if (v) out.push(v);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * DroidValidator-style schema check over a droid `.md` (frontmatter + body).
+ * Mirrors the validation Factory applies on load per the droid doc:
+ *   - `name` required, lowercase letters/digits/`-`/`_`.
+ *   - `description` optional (warn if missing), ≤500 chars, single line.
+ *   - `model` optional: `inherit`, a specific model ID, or `custom:<model>`.
+ *   - `reasoningEffort` optional: `low` | `medium` | `high`.
+ *   - `tools` optional: category strings or CASE-SENSITIVE tool IDs; no
+ *     wildcards (`mcp__*__*` is invalid — use `mcpServers`).
+ *   - `mcpServers` optional: array of server-name tokens.
+ *
+ * Pure function: returns `{ valid, errors, warnings }`. `errors` are
+ * load-blocking per DroidValidator; `warnings` are advisory.
+ */
+function validateDroidFrontmatter(content) {
+  const errors = [];
+  const warnings = [];
+  const { frontmatter } = extractFrontmatterAndBody(content);
+  if (!frontmatter) {
+    errors.push('missing YAML frontmatter');
+    return { valid: false, errors, warnings };
+  }
+
+  const name = extractFrontmatterField(frontmatter, 'name');
+  if (!name) {
+    errors.push('`name` is required');
+  } else if (!/^[a-z0-9][a-z0-9_-]*$/.test(name)) {
+    errors.push(`\`name\` "${name}" must be lowercase letters, digits, hyphen, or underscore`);
+  }
+
+  const description = extractFrontmatterField(frontmatter, 'description');
+  if (!description) {
+    warnings.push('`description` is recommended (shown in the /droids UI)');
+  } else if (description.length > 500) {
+    errors.push(`\`description\` is ${description.length} chars (max 500)`);
+  }
+
+  const model = extractFrontmatterField(frontmatter, 'model');
+  if (model) {
+    const ok = model === 'inherit'
+      || /^custom:.+/.test(model)
+      || /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(model);
+    if (!ok) errors.push(`\`model\` "${model}" is not a valid model identifier`);
+  }
+
+  const reasoningEffort = extractFrontmatterField(frontmatter, 'reasoningEffort');
+  if (reasoningEffort && !FACTORY_DROID_REASONING_EFFORTS.has(reasoningEffort)) {
+    errors.push(`\`reasoningEffort\` "${reasoningEffort}" must be one of low|medium|high`);
+  }
+
+  for (const rawTool of parseFrontmatterTools(frontmatter)) {
+    const tool = stripDroidListToken(rawTool);
+    if (!tool) continue;
+    if (tool.includes('*')) {
+      errors.push(`\`tools\` entry "${tool}" contains a wildcard (invalid — list the server under mcpServers)`);
+      continue;
+    }
+    if (FACTORY_DROID_TOOL_CATEGORIES.has(tool)) continue;
+    if (FACTORY_DROID_TOOL_IDS.has(tool)) continue;
+    errors.push(`\`tools\` entry "${tool}" is not a Factory tool category or case-sensitive tool ID`);
+  }
+
+  for (const server of parseDroidFrontmatterList(frontmatter, 'mcpServers')) {
+    if (!/^[A-Za-z0-9_-]+$/.test(server)) {
+      errors.push(`\`mcpServers\` entry "${server}" is not a valid server name`);
+    }
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
+}
+
+function convertClaudeAgentToDroidAgent(content, _isGlobal = false) {
+  const { frontmatter, body } = extractFrontmatterAndBody(content);
+  if (!frontmatter) return content;
+
+  const name = normalizeDroidName(extractFrontmatterField(frontmatter, 'name') || 'gsd-droid');
+  const rawDescription = toSingleLine(extractFrontmatterField(frontmatter, 'description') || '');
+  const description = rawDescription.length > 500
+    ? `${rawDescription.slice(0, 497)}...`
+    : rawDescription;
+
+  const rawTools = parseFrontmatterTools(frontmatter);
+  const mcpServers = new Set();
+  const keptTools = [];
+
+  for (const tool of rawTools) {
+    const t = String(tool || '').trim();
+    if (!t) continue;
+    // Strip MCP wildcards (`mcp__<server>__*`) — factory doc says wildcards
+    // are invalid in the `tools:` field; capture the server for `mcpServers`.
+    const mcpWildcardMatch = t.match(/^mcp__([A-Za-z0-9_-]+)__\*$/);
+    if (mcpWildcardMatch) {
+      mcpServers.add(mcpWildcardMatch[1]);
+      continue;
+    }
+    if (t.startsWith('mcp__') && t.includes('*')) {
+      const serverMatch = t.match(/^mcp__([A-Za-z0-9_-]+)__/);
+      if (serverMatch) mcpServers.add(serverMatch[1]);
+      continue;
+    }
+    if (FACTORY_DROID_TOOL_IDS.has(t)) {
+      keptTools.push(t);
+    }
+    // Claude-only IDs (Write, WebFetch, NotebookEdit, Skill, Agent,
+    // AskUserQuestion, Bash, TodoWrite, ...) deliberately dropped — they
+    // have no 1:1 Factory equivalent and would generate DroidValidator
+    // errors per the doc.
+  }
+
+  // Drain the body for any `mcp__<server>__*` references and add the
+  // captured MCP server to mcpServers. The droid's runtime will only
+  // expose MCP server tools if the server name is explicitly listed
+  // (per Factory droid doc §"Selecting MCP servers"). Body references like
+  // `mcp__playwright__navigate(...)` are LLM-callable references —
+  // without the matching server in mcpServers, the droid would attempt to
+  // call those tools but they'd be missing from its toolset.
+  const bodyMcpMatches = body.matchAll(/mcp__([A-Za-z0-9_-]+)__/g);
+  for (const m of bodyMcpMatches) {
+    mcpServers.add(m[1]);
+  }
+
+  const lines = ['---'];
+  lines.push(`name: ${name}`);
+  if (description) lines.push(`description: ${yamlQuote(description)}`);
+  if (keptTools.length) lines.push(`tools: [${keptTools.map((t) => yamlQuote(t)).join(', ')}]`);
+  if (mcpServers.size) lines.push(`mcpServers: [${[...mcpServers].map((s) => yamlQuote(s)).join(', ')}]`);
+  lines.push('---');
+
+  const result = `${lines.join('\n')}\n${body}`;
+  // DroidValidator-style schema self-check: the descriptor-driven agents path
+  // has no per-runtime install branch to warn from, so surface it here.
+  const verdict = validateDroidFrontmatter(result);
+  if (!verdict.valid) {
+    console.warn(`  ⚠ Droid ${name} failed schema check: ${verdict.errors.join('; ')}`);
+  }
+  return result;
+}
+
+/**
  * Convert Claude Code agent markdown to Cursor agent format.
  * Strips frontmatter fields Cursor doesn't support (color, skills),
  * converts tool references, and adds a role context header.
@@ -2272,6 +2509,33 @@ function _applyRuntimeRewrites(content, runtime, pathPrefix, isGlobal = false, a
       content = content.replace(/\$HOME\/\.claude\b/g, normalizedPathPrefix);
       content = content.replace(/~\/\.cline\b/g, normalizedPathPrefix);
       content = content.replace(/\$HOME\/\.cline\b/g, normalizedPathPrefix);
+      content = processAttribution(content, attribution);
+      break;
+
+    case 'droid':
+      // Sub-token rewrites FIRST (most specific) so the bare `.claude/` →
+      // `.factory/` swap below preserves the renamed subsegment. Factory
+      // exposes no `~/.factory/agents/` or `~/.factory/commands/` — agents
+      // live at `.factory/droids/` and slash invocations are skills
+      // (verified empirically against docs.factory.ai; the `commands` and
+      // `commands-reference` doc pages resolve 404, and `~/.factory/commands/`
+      // does not exist in a fresh install).
+      content = content.replace(/\.claude\/agents\//g, '.factory/droids/');
+      content = content.replace(/~\/\.claude\/agents\//g, pathPrefix + 'droids/');
+      content = content.replace(/\$HOME\/\.claude\/agents\//g, pathPrefix + 'droids/');
+      content = content.replace(/\.claude\/commands\//g, '.factory/skills/');
+      content = content.replace(/~\/\.claude\/commands\//g, pathPrefix + 'skills/');
+      content = content.replace(/\$HOME\/\.claude\/commands\//g, pathPrefix + 'skills/');
+      // Generic `.claude` ↔ `.factory` swaps (same shape as cline).
+      content = content.replace(/~\/\.claude\//g, pathPrefix);
+      content = content.replace(/\$HOME\/\.claude\//g, pathPrefix);
+      content = content.replace(/\.\/\.claude\//g, `./${dirName}/`);
+      content = content.replace(/~\/\.factory\//g, pathPrefix);
+      content = content.replace(/\$HOME\/\.factory\//g, pathPrefix);
+      content = content.replace(/~\/\.claude\b/g, normalizedPathPrefix);
+      content = content.replace(/\$HOME\/\.claude\b/g, normalizedPathPrefix);
+      content = content.replace(/~\/\.factory\b/g, normalizedPathPrefix);
+      content = content.replace(/\$HOME\/\.factory\b/g, normalizedPathPrefix);
       content = processAttribution(content, attribution);
       break;
 
@@ -2696,6 +2960,12 @@ export = {
   convertClaudeAgentToCodebuddyAgent,
   convertClaudeAgentToClineAgent,
   convertClaudeAgentToCodexAgent,
+  convertClaudeAgentToDroidAgent,
+  validateDroidFrontmatter,
+  normalizeDroidName,
+  FACTORY_DROID_TOOL_IDS,
+  FACTORY_DROID_TOOL_CATEGORIES,
+  FACTORY_DROID_REASONING_EFFORTS,
   // #1511 ADR-1508 Phase 2: rewrite engine deep seam
   // Low-level walkers (pathPrefix + attribution pre-resolved by caller):
   applyRuntimeContentRewritesInPlace,

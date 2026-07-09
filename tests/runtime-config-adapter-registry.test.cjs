@@ -214,6 +214,24 @@ describe('ALLOWED_CONFIG_RUNTIMES completeness', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Plan 14-03 — droid descriptor end-to-end via resolveInstallPlan (R4 test-side)
+// ---------------------------------------------------------------------------
+
+describe('resolveInstallPlan — droid all-six-axes (#14)', () => {
+  test('resolveInstallPlan("droid") populates SPEC R4 axes', () => {
+    const plan = resolveInstallPlan('droid');
+    assert.strictEqual(plan.runtime, 'droid');
+    assert.strictEqual(plan.installSurface, 'settings-json');
+    assert.strictEqual(plan.writesSharedSettings, true);
+    assert.strictEqual(plan.finishPermissionWriter, null);
+    assert.strictEqual(plan.hookEvents, 'claude');
+    assert.deepStrictEqual(plan.extendedHookEvents, []);
+    assert.strictEqual(plan.hooksSurface, 'settings-json');
+    assert.strictEqual(plan.sandboxTier, 'none');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Test 8: INSTALL_SURFACES export
 // ---------------------------------------------------------------------------
 

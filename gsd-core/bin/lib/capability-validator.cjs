@@ -697,6 +697,7 @@ const VALID_CONVERTER_NAMES = new Set([
   'convertClaudeAgentToCodebuddyAgent',
   'convertClaudeAgentToClineAgent',
   'convertClaudeAgentToCodexAgent',
+  'convertClaudeAgentToDroidAgent',
 ]);
 
 // C3: Validate role:runtime body

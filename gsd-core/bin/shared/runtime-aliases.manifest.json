@@ -70,5 +70,11 @@
   "cline": [
     "cline",
     "cline-cli"
+  ],
+  "droid": [
+    "droid",
+    "droid-cli",
+    "factory",
+    "factory-droid"
   ]
 }

@@ -126,6 +126,90 @@ describe('runtime-name-policy getProjectInstructionFile (#1529)', () => {
   });
 });
 
+// --- Phase 14-droid-runtime: droid alias/getDirName/getProjectInstructionFile coverage ---
+
+const { getDirName } = require(path.join(ROOT, 'gsd-core', 'bin', 'lib', 'runtime-name-policy.cjs'));
+
+describe('runtime-name-policy droid alias canonicalisation (R1)', () => {
+  const droidTokens = [
+    'droid',
+    'droid-cli',
+    'factory',
+    'factory-droid',
+    'DROID',
+    ' factory ',
+    'droid_cli',
+    'FACTORY-DROID',
+  ];
+  test(`canonicalizeRuntimeName maps ${droidTokens.length} droid tokens to "droid"`, () => {
+    for (const token of droidTokens) {
+      assert.strictEqual(
+        canonicalizeRuntimeName(token),
+        'droid',
+        `expected canonicalizeRuntimeName(${JSON.stringify(token)}) === "droid"`,
+      );
+    }
+  });
+
+  test('resolveRuntimeNameFromCandidates picks droid from precedence list', () => {
+    assert.strictEqual(resolveRuntimeNameFromCandidates('', null, 'droid-cli'), 'droid');
+    assert.strictEqual(resolveRuntimeNameFromCandidates('  factory  ', null), 'droid');
+  });
+});
+
+describe('runtime-name-policy getDirName for droid (R2)', () => {
+  test('getDirName("droid") returns ".factory"', () => {
+    assert.strictEqual(getDirName('droid'), '.factory');
+  });
+
+  test('existing 16-runtime getDirName values unchanged (regression guard)', () => {
+    assert.strictEqual(getDirName('claude'), '.claude');
+    assert.strictEqual(getDirName('codex'), '.codex');
+    assert.strictEqual(getDirName('cline'), '.cline');
+  });
+});
+
+describe('runtime-name-policy getProjectInstructionFile for droid (R3)', () => {
+  test('getProjectInstructionFile("droid") === "AGENTS.md"', () => {
+    assert.strictEqual(getProjectInstructionFile('droid'), 'AGENTS.md');
+  });
+
+  test('alias "factory-droid" normalizes to "droid" then maps to AGENTS.md', () => {
+    assert.strictEqual(getProjectInstructionFile('factory-droid'), 'AGENTS.md');
+    assert.strictEqual(getProjectInstructionFile('droid-cli'), 'AGENTS.md');
+    assert.strictEqual(getProjectInstructionFile('factory'), 'AGENTS.md');
+  });
+});
+
+describe('runtime-name-policy droid manifest vs FALLBACK_ALIASES drift guard (#792 pattern)', () => {
+  const manifestPath = path.join(ROOT, 'gsd-core', 'bin', 'shared', 'runtime-aliases.manifest.json');
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const srcPath = path.join(ROOT, 'src', 'runtime-name-policy.cts');
+  const src = fs.readFileSync(srcPath, 'utf8');
+
+  test('manifest droid key contains the four canonical tokens', () => {
+    assert.ok(Array.isArray(manifest.droid), 'manifest.droid must be an array');
+    assert.deepStrictEqual(
+      [...manifest.droid].sort(),
+      ['droid', 'droid-cli', 'factory', 'factory-droid'],
+      `manifest droid aliases must match the four-token canonical set; got: ${JSON.stringify(manifest.droid)}`,
+    );
+  });
+
+  test('FALLBACK_ALIASES droid row in source matches manifest droid array', () => {
+    const match = src.match(/droid:\s*\[([^\]]+)\]/);
+    assert.ok(match, 'FALLBACK_ALIASES droid row must exist in src/runtime-name-policy.cts');
+    const srcAliases = match[1]
+      .split(',')
+      .map(s => s.trim().replace(/^['"]|['"]$/g, ''))
+      .filter(Boolean);
+    assert.deepStrictEqual(
+      [...srcAliases].sort(),
+      [...manifest.droid].sort(),
+      `FALLBACK_ALIASES droid=${JSON.stringify([...srcAliases].sort())} must match manifest droid=${JSON.stringify([...manifest.droid].sort())}`,
+    );
+  });
+});
 
 // ────────────────────────────────────────────────────────────────────────
 // Folded from tests/bug-783-kilo-global-skills-base.test.cjs — consolidation epic #1969 (B3 #1972)

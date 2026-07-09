@@ -48,6 +48,7 @@ const GOLDEN_FRAGMENT_MAP = {
   kimi:      "'.config', 'agents'",
   zcode:     "'.zcode'",
   droid:     "'.factory'",
+  pi:        "'.pi', 'agent'",
 };
 
 // Runtimes intentionally NOT in the table: claude is the default; antigravity is

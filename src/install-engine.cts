@@ -698,6 +698,23 @@ function installRuntimeArtifacts(
     const nestedGsdDirForCleanup = path.join(configDir, 'skills', 'gsd');
     _removeHermesBareStemDirs(nestedGsdDirForCleanup);
   }
+
+  // Generic hostBehaviors.nativePlugin emission for non-family runtimes
+  // (e.g. Pi's extension adapter pi/gsd.cjs -> <configHome>/extensions/gsd.cjs).
+  // Combined-family runtimes (OpenCode/Kilo) returned early above and write
+  // their plugin inside installOpencodeFamilyArtifacts; uninstall + manifest
+  // tracking for this file are already descriptor-generic in bin/install.js.
+  const np = behaviors.nativePlugin;
+  if (np && np.source) {
+    const commandsGsdDir = runtimeArtifactLayout.findInstallSourceRoot(configDir);
+    const packageRoot = path.dirname(path.dirname(commandsGsdDir));
+    const pluginSrc = path.join(packageRoot, np.source);
+    if (fs.existsSync(pluginSrc)) {
+      const destDir = runtimeArtifactInstallPlan.assertDestWithinConfigHome(configDir, np.dir);
+      fs.mkdirSync(destDir, { recursive: true });
+      fs.copyFileSync(pluginSrc, path.join(destDir, np.file));
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

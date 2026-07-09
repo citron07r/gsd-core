@@ -31,6 +31,7 @@ const FALLBACK_ALIASES: Readonly<Record<string, string[]>> = {
   codebuddy: ['codebuddy', 'codebuddy-cli'],
   cline: ['cline', 'cline-cli'],
   droid: ['droid', 'droid-cli', 'factory', 'factory-droid'],
+  pi: ['pi', 'pi-coding-agent', 'pi-agent'],
 };
 
 function normalizeRuntimeToken(value: string): string {
@@ -199,6 +200,7 @@ const RUNTIME_LABELS: Readonly<Record<string, string>> = {
   cline: 'Cline',
   zcode: 'ZCode',
   droid: 'Droid',
+  pi: 'Pi',
 };
 
 /**
@@ -248,6 +250,7 @@ const GLOBAL_CONFIG_HOME_FRAGMENTS: Readonly<Record<string, string>> = {
   kimi:      "'.config', 'agents'",
   zcode:     "'.zcode'",
   droid:     "'.factory'",
+  pi:        "'.pi', 'agent'",
 };
 
 /**
@@ -271,7 +274,7 @@ export function getGlobalConfigHomeFragment(runtime: string): string {
  */
 const RUNTIME_FLAG_IDS = Object.freeze([
   'opencode', 'kilo', 'codex', 'copilot', 'antigravity', 'cursor',
-  'windsurf', 'augment', 'trae', 'qwen', 'hermes', 'codebuddy', 'cline', 'kimi', 'zcode', 'droid',
+  'windsurf', 'augment', 'trae', 'qwen', 'hermes', 'codebuddy', 'cline', 'kimi', 'zcode', 'droid', 'pi',
 ] as const);
 
 /**

@@ -76,5 +76,10 @@
     "droid-cli",
     "factory",
     "factory-droid"
+  ],
+  "pi": [
+    "pi",
+    "pi-coding-agent",
+    "pi-agent"
   ]
 }

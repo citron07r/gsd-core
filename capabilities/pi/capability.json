@@ -1,0 +1,96 @@
+{
+  "id": "pi",
+  "role": "runtime",
+  "version": "1.7.0-rc.4",
+  "title": "Pi Coding Agent",
+  "description": "Pi coding agent (earendil-works/pi, npm @earendil-works/pi-coding-agent). Global config home is ~/.pi/agent/ per Pi docs; the CLI honours PI_CODING_AGENT_DIR as a real host env override for that directory. Skills use the open Agent Skills standard (skills/<name>/SKILL.md, Claude dialect) and are slash-invocable as /skill:<name> when enableSkillCommands is set. Slash commands are Pi 'prompt templates' — flat .md files under prompts/ with bash-style placeholders ($1, $@, $ARGUMENTS), so GSD command bodies interpolate unchanged and are emitted verbatim. Pi has NO subagents by design (README: 'skips features like sub agents and plan mode') — no agents artifact kind is declared. Hook-equivalent integration ships as a native extension: hostBehaviors.nativePlugin installs pi/gsd.cjs into <configHome>/extensions/gsd.cjs, where Pi's extension loader picks it up (registers the /gsd command, the gsd_invoke tool, and a blocking tool_call listener — extensionEvents dialect 'pi', surface ['tool_call']). Pi has no MCP support by design; transport is native-extension. No settings.json is written by GSD (installSurface profile-marker-only). Tier-2 support (parity eligibility, not primary).",
+  "tier": "core",
+  "requires": [],
+  "engines": {
+    "gsd": ">=1.6.0"
+  },
+  "runtime": {
+    "configHome": {
+      "kind": "dot-home-nested",
+      "name": "agent",
+      "parent": ".pi",
+      "env": [
+        "PI_CODING_AGENT_DIR"
+      ]
+    },
+    "localConfigDir": ".pi",
+    "configFormat": "none",
+    "artifactLayout": {
+      "global": [
+        {
+          "kind": "skills",
+          "destSubpath": "skills",
+          "prefix": "gsd-",
+          "nesting": "nested",
+          "recursive": false,
+          "converter": "convertClaudeCommandToClaudeSkill"
+        },
+        {
+          "kind": "commands",
+          "destSubpath": "prompts",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": null
+        }
+      ],
+      "local": [
+        {
+          "kind": "skills",
+          "destSubpath": "skills",
+          "prefix": "gsd-",
+          "nesting": "nested",
+          "recursive": false,
+          "converter": "convertClaudeCommandToClaudeSkill"
+        },
+        {
+          "kind": "commands",
+          "destSubpath": "prompts",
+          "prefix": "gsd-",
+          "nesting": "flat",
+          "recursive": false,
+          "converter": null
+        }
+      ]
+    },
+    "commandStyle": "slash-hyphen",
+    "hooksSurface": "none",
+    "hookEvents": "claude",
+    "extensionEvents": "pi",
+    "sandboxTier": "none",
+    "supportTier": 2,
+    "installSurface": "profile-marker-only",
+    "writesSharedSettings": false,
+    "permissionWriter": null,
+    "extendedHookEvents": [],
+    "hostBehaviors": {
+      "nativePlugin": {
+        "dir": "extensions",
+        "file": "gsd.cjs",
+        "source": "pi/gsd.cjs"
+      }
+    },
+    "hostIntegration": {
+      "embeddingMode": "imperative",
+      "commandSurface": "slash-file",
+      "dispatch": {
+        "namedDispatch": true,
+        "nested": "undocumented",
+        "maxDepth": "undocumented",
+        "background": "undocumented",
+        "subagentToolkit": "undocumented",
+        "backgroundDispatch": false
+      },
+      "modelMode": "passive",
+      "hookBus": "host",
+      "stateIO": "filesystem",
+      "transport": "native-extension",
+      "runtime": "node"
+    }
+  }
+}

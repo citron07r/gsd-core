@@ -14,7 +14,7 @@ const registry = require('../gsd-core/bin/lib/capability-registry.cjs');
 const EXPECTED_FLAGS = [
   'isOpencode', 'isKilo', 'isCodex', 'isCopilot', 'isAntigravity',
   'isCursor', 'isWindsurf', 'isAugment', 'isTrae', 'isQwen', 'isHermes',
-  'isCodebuddy', 'isCline', 'isKimi', 'isZcode', 'isDroid',
+  'isCodebuddy', 'isCline', 'isKimi', 'isZcode', 'isDroid', 'isPi',
 ];
 
 test('runtimeFlags: every known non-claude runtime sets exactly its own flag true', () => {
@@ -35,12 +35,12 @@ test('runtimeFlags: claude / unknown / empty → all flags false (fail-closed)',
   }
 });
 
-test('runtimeFlags: all 16 flags present + boolean + the object is frozen', () => {
+test('runtimeFlags: all 17 flags present + boolean + the object is frozen', () => {
   const flags = runtimeFlags('opencode');
   for (const f of EXPECTED_FLAGS) {
     assert.strictEqual(typeof flags[f], 'boolean', `${f} must be boolean`);
   }
-  assert.deepStrictEqual(Object.keys(flags).sort(), [...EXPECTED_FLAGS].sort(), 'exactly the 16 flags');
+  assert.deepStrictEqual(Object.keys(flags).sort(), [...EXPECTED_FLAGS].sort(), 'exactly the 17 flags');
   assert.ok(Object.isFrozen(flags), 'flags object must be frozen');
 });
 

@@ -1,0 +1,4 @@
+---
+type: Added
+---
+**Pi Coding Agent is now an installable runtime** — `gsd-core --pi` lands GSD skills at `~/.pi/agent/skills/<name>/SKILL.md` (open Agent Skills standard) and slash commands as Pi prompt templates under `~/.pi/agent/prompts/`. Pi ships as a declarative capability descriptor (`capabilities/pi/capability.json`) with zero hardcoded `runtime === 'pi'` branches; the GSD native extension (`pi/gsd.cjs`) is installed to `~/.pi/agent/extensions/gsd.cjs` via a new descriptor-generic `hostBehaviors.nativePlugin` emission in the install engine, giving Pi hook-equivalent integration through its extension API (`tool_call` surface). Pi has no subagents by design, so no agents are emitted. The CLI-honored `PI_CODING_AGENT_DIR` env var relocates the install target (used by tests to stay out of `~/.pi`).

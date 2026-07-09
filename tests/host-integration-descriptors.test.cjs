@@ -38,17 +38,19 @@ const DISPATCH_KEYS = ['namedDispatch', 'nested', 'maxDepth', 'background', 'sub
 const RUNTIME_IDS = Object.keys(registry.runtimes);
 
 // Contract-pinned profile split (derived from .host-cli-final.json):
-// programmatic-cli: claude, cline, cursor, hermes, kilo, kimi, opencode, qwen, trae (9)
-// declarative-cli:  antigravity, augment, codebuddy, codex, copilot, windsurf, zcode (7)
+// programmatic-cli: claude, cline, cursor, droid, hermes, kilo, kimi, opencode, pi, qwen, trae (11)
+// declarative-cli:  antigravity, augment, codebuddy, codex, copilot, junie, windsurf, zcode (8)
 // ide: 0
 const EXPECTED_PROFILES = {
   claude:      'programmatic-cli',
   cline:       'programmatic-cli',
   cursor:      'programmatic-cli',
+  droid:       'programmatic-cli',
   hermes:      'programmatic-cli',
   kilo:        'programmatic-cli',
   kimi:        'programmatic-cli',
   opencode:    'programmatic-cli',
+  pi:          'programmatic-cli',
   qwen:        'programmatic-cli',
   trae:        'programmatic-cli',
   antigravity: 'declarative-cli',
@@ -56,6 +58,7 @@ const EXPECTED_PROFILES = {
   codebuddy:   'declarative-cli',
   codex:       'declarative-cli',
   copilot:     'declarative-cli',
+  junie:       'declarative-cli',
   windsurf:    'declarative-cli',
   zcode:       'declarative-cli',
 };
@@ -262,7 +265,7 @@ describe('ADR-1239 Phase A: hostIntegration descriptors', () => {
 
   // ─── shouldFlattenDispatch per-host (#853 discriminator) ─────────────────────
 
-  // Expected: false (may background) for codex and cursor ONLY; true (must inline) for the other 15.
+  // Expected: false (may background) for codex, cursor, and opencode ONLY; true (must inline) for the rest.
   const EXPECTED_FLATTEN = {
     antigravity: true,
     augment:     true,
@@ -272,12 +275,15 @@ describe('ADR-1239 Phase A: hostIntegration descriptors', () => {
     codex:       false,
     copilot:     true,
     cursor:      false,
+    droid:       true,
     hermes:      true,
+    junie:       true,
     kilo:        true,
     kimi:        true,
     // #2087: OpenCode background subagents (v1.15 param, v1.17 default-on) →
     // dispatch.background/backgroundDispatch true → NOT force-flattened.
     opencode:    false,
+    pi:          true,
     qwen:        true,
     trae:        true,
     windsurf:    true,

@@ -713,6 +713,8 @@ function installRuntimeArtifacts(
       const destDir = runtimeArtifactInstallPlan.assertDestWithinConfigHome(configDir, np.dir);
       fs.mkdirSync(destDir, { recursive: true });
       fs.copyFileSync(pluginSrc, path.join(destDir, np.file));
+    } else {
+      console.warn(`  Warning: native plugin source missing for ${runtime}: ${np.source} (packaging regression — reinstall from npm)`);
     }
   }
 }
@@ -914,6 +916,8 @@ function installOpencodeFamilyArtifacts(
       const destDir = runtimeArtifactInstallPlan.assertDestWithinConfigHome(configDir, np.dir);
       fs.mkdirSync(destDir, { recursive: true });
       fs.copyFileSync(pluginSrc, path.join(destDir, np.file));
+    } else {
+      console.warn(`  Warning: native plugin source missing for ${runtime}: ${np.source} (packaging regression — reinstall from npm)`);
     }
   }
 }

@@ -752,14 +752,14 @@ describe('Kilo integration — install/uninstall behaviour', () => {
     assert.deepStrictEqual(selectRuntimesFromArgs(['--kilo']), ['kilo']);
   });
 
-  test('runtimeMap has Kilo as option 11 after Kimi', () => {
-    assert.strictEqual(runtimeMap['11'], 'kilo');
+  test('runtimeMap has Kilo as option 13 after Kimi', () => {
+    assert.strictEqual(runtimeMap['13'], 'kilo');
   });
 
   test('prompt text shows Kilo above OpenCode without marketing copy', () => {
     const plain = stripAnsi(buildRuntimePromptText());
-    assert.ok(/\b11\)\s*Kilo\b/.test(plain));
-    assert.ok(plain.indexOf('11) Kilo') < plain.indexOf('OpenCode'));
+    assert.ok(/\b13\)\s*Kilo\b/.test(plain));
+    assert.ok(plain.indexOf('13) Kilo') < plain.indexOf('OpenCode'));
     assert.ok(!plain.includes('the #1 AI coding platform on OpenRouter'));
   });
 

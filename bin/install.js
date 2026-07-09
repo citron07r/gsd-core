@@ -10536,26 +10536,20 @@ const runtimeMap = {
   '6': 'codex',
   '7': 'copilot',
   '8': 'cursor',
-  '9': 'hermes',
-  '10': 'kimi',
-  '11': 'kilo',
-  '12': 'opencode',
-  '13': 'qwen',
-  '14': 'trae',
-  '15': 'windsurf',
-  '16': 'zcode'
+  '9': 'droid',
+  '10': 'hermes',
+  '11': 'junie',
+  '12': 'kimi',
+  '13': 'kilo',
+  '14': 'opencode',
+  '15': 'pi',
+  '16': 'qwen',
+  '17': 'trae',
+  '18': 'windsurf',
+  '19': 'zcode'
 };
-const allRuntimes = ['claude', 'antigravity', 'augment', 'cline', 'codebuddy', 'codex', 'copilot', 'cursor', 'hermes', 'kimi', 'kilo', 'opencode', 'qwen', 'trae', 'windsurf', 'zcode'];
-// 'droid', 'pi', and 'junie' are intentionally absent from the interactive
-// allRuntimes menu but fully supported via their flags (e.g. `node
-// bin/install.js --droid --global`, `--pi --global`, `--junie --global`).
-// The descriptor-driven pipeline handles droid natively:
-// skills/ (converted skills), droids/ (converted via convertClaudeAgentToDroidAgent),
-// commands/ (local, verbatim), and settings.json hooks (Claude dialect). It is
-// kept out of the numbered menu only to avoid renumbering the "All" option;
-// add it to runtimeMap + buildRuntimePromptText + allRuntimes if interactive
-// selection is wanted.
-const ALL_RUNTIMES_OPTION = '17';
+const allRuntimes = ['claude', 'antigravity', 'augment', 'cline', 'codebuddy', 'codex', 'copilot', 'cursor', 'droid', 'hermes', 'junie', 'kimi', 'kilo', 'opencode', 'pi', 'qwen', 'trae', 'windsurf', 'zcode'];
+const ALL_RUNTIMES_OPTION = '20';
 
 /**
  * Build the runtime-selection prompt text shown by the interactive installer.
@@ -10571,15 +10565,18 @@ function buildRuntimePromptText() {
   ${cyan}6${reset}) Codex        ${dim}(~/.codex)${reset}
   ${cyan}7${reset}) Copilot      ${dim}(~/.copilot)${reset}
   ${cyan}8${reset}) Cursor       ${dim}(~/.cursor)${reset}
-  ${cyan}9${reset}) Hermes Agent ${dim}(~/.hermes)${reset}
-  ${cyan}10${reset}) Kimi         ${dim}(~/.config/agents, then ~/.agents if existing)${reset}
-  ${cyan}11${reset}) Kilo         ${dim}(~/.config/kilo)${reset}
-  ${cyan}12${reset}) OpenCode     ${dim}(~/.config/opencode)${reset}
-  ${cyan}13${reset}) Qwen Code    ${dim}(~/.qwen)${reset}
-  ${cyan}14${reset}) Trae         ${dim}(~/.trae)${reset}
-  ${cyan}15${reset}) Windsurf     ${dim}(~/.codeium/windsurf)${reset}
-  ${cyan}16${reset}) ZCode        ${dim}(~/.zcode)${reset}
-  ${cyan}17${reset}) All
+  ${cyan}9${reset}) Droid        ${dim}(~/.factory)${reset}
+  ${cyan}10${reset}) Hermes Agent ${dim}(~/.hermes)${reset}
+  ${cyan}11${reset}) Junie        ${dim}(~/.junie)${reset}
+  ${cyan}12${reset}) Kimi         ${dim}(~/.config/agents, then ~/.agents if existing)${reset}
+  ${cyan}13${reset}) Kilo         ${dim}(~/.config/kilo)${reset}
+  ${cyan}14${reset}) OpenCode     ${dim}(~/.config/opencode)${reset}
+  ${cyan}15${reset}) Pi           ${dim}(~/.pi/agent)${reset}
+  ${cyan}16${reset}) Qwen Code    ${dim}(~/.qwen)${reset}
+  ${cyan}17${reset}) Trae         ${dim}(~/.trae)${reset}
+  ${cyan}18${reset}) Windsurf     ${dim}(~/.codeium/windsurf)${reset}
+  ${cyan}19${reset}) ZCode        ${dim}(~/.zcode)${reset}
+  ${cyan}20${reset}) All
 
   ${dim}Select multiple: 1,2,6 or 1 2 6${reset}
 `;

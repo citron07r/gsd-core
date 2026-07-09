@@ -35,6 +35,12 @@ const FALLBACK_ALIASES: Readonly<Record<string, string[]>> = {
   junie: ['junie', 'jetbrains-junie', 'junie-cli'],
 };
 
+/**
+ * Normalizes a runtime identifier for alias lookup.
+ *
+ * @param value - The input value to normalize
+ * @returns The trimmed, lowercase token with runs of spaces and underscores replaced by `-`
+ */
 function normalizeRuntimeToken(value: string): string {
   return String(value).trim().toLowerCase().replace(/[_\s]+/g, '-');
 }

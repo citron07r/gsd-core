@@ -573,15 +573,15 @@ function _runLegacyUninstallCleanup(runtime: string, configDir: string, scope: s
 // ---------------------------------------------------------------------------
 
 /**
- * Layout-driven install orchestrator.
- * Runs legacy migrations first, then uses resolveRuntimeArtifactLayout to
- * determine what artifact kinds to write and where.
+ * Installs runtime artifacts for the selected runtime and scope.
  *
- * @param runtime             canonical runtime ID
- * @param configDir           resolved runtime config directory
- * @param scope
- * @param resolvedProfile     from resolveProfile() / resolveEffectiveProfile()
- * @param resolveAttribution  injection: (runtime) => attribution string | undefined
+ * Runs legacy migrations first, then resolves the runtime layout and install plan, prunes stale GSD-owned entries, copies staged artifacts into place, and performs runtime-specific post-install cleanup. Combined-family runtimes route through the dedicated OpenCode/Kilo installer.
+ *
+ * @param runtime - Canonical runtime ID.
+ * @param configDir - Resolved runtime config directory.
+ * @param scope - Install scope.
+ * @param resolvedProfile - Resolved profile used to select staged artifacts.
+ * @param resolveAttribution - Resolves attribution text for content transforms.
  */
 function installRuntimeArtifacts(
   runtime: string,
@@ -867,17 +867,16 @@ function installOpencodeFamilyCommands(
 // ---------------------------------------------------------------------------
 
 /**
- * Combined-family install orchestrator for OpenCode/Kilo (ADR-1239 / #2087).
- * Stages the flattened commands surface + skills surface + (OpenCode only)
- * native plugin adapter, mirroring the bespoke `else if (isOpencode ||
- * isKilo)` block previously inlined in bin/install.js.
+ * Installs OpenCode/Kilo runtime artifacts using the combined-family layout.
  *
- * @param runtime - 'opencode' or 'kilo'
- * @param configDir - resolved runtime config directory
- * @param scope - install scope ('global' | 'local')
- * @param resolvedProfile - from resolveProfile() / resolveEffectiveProfile()
- * @param resolveAttribution - injection: (runtime) => attribution string | undefined
- * @param behaviors - the runtime's hostBehaviors descriptor (already resolved by the caller)
+ * Installs flattened commands, generated skills, and any configured native plugin adapter for the runtime.
+ *
+ * @param runtime - The runtime name.
+ * @param configDir - The resolved runtime config directory.
+ * @param scope - The install scope.
+ * @param resolvedProfile - The resolved profile to stage.
+ * @param resolveAttribution - Resolves attribution text for the current runtime.
+ * @param behaviors - The resolved host behavior descriptor.
  */
 function installOpencodeFamilyArtifacts(
   runtime: string,

@@ -1957,8 +1957,11 @@ function convertClaudeAgentToCopilotAgent(content, isGlobal = false) {
 }
 
 /**
- * Convert a Claude agent (.md) to an Antigravity agent.
- * Uses Gemini tool names since Antigravity runs on Gemini 3 backend.
+ * Converts a Claude agent to an Antigravity agent.
+ *
+ * @param content - The Claude agent markdown content
+ * @param isGlobal - Whether the source agent comes from the global runtime
+ * @returns The converted Antigravity agent markdown
  */
 function convertClaudeAgentToAntigravityAgent(content, isGlobal = false) {
   const converted = convertClaudeToAntigravityContent(content, isGlobal);
@@ -2047,14 +2050,22 @@ function normalizeDroidName(value) {
   return lowered || 'gsd-droid';
 }
 
-/** Strip YAML inline-array decoration (`[`, `]`, quotes) from a list token. */
+/**
+ * Removes YAML list decoration from a Droid frontmatter token.
+ *
+ * @param token - The raw list token
+ * @returns The token without surrounding brackets, quotes, or extra whitespace
+ */
 function stripDroidListToken(token) {
   return String(token).replace(/^[[\s'"]+|[\]\s'"]+$/g, '').trim();
 }
 
 /**
- * Parse a frontmatter list field (inline `field: [a, b]` or block `- a`)
- * into a deduped array of bare string tokens.
+ * Extracts list values from a Droid frontmatter field.
+ *
+ * @param frontmatter - The frontmatter text to parse.
+ * @param fieldName - The field name to read, such as `tools` or `mcpServers`.
+ * @returns A deduplicated array of string tokens from inline or block list syntax.
  */
 function parseDroidFrontmatterList(frontmatter, fieldName) {
   if (!frontmatter) return [];
@@ -2082,18 +2093,12 @@ function parseDroidFrontmatterList(frontmatter, fieldName) {
 }
 
 /**
- * DroidValidator-style schema check over a droid `.md` (frontmatter + body).
- * Mirrors the validation Factory applies on load per the droid doc:
- *   - `name` required, lowercase letters/digits/`-`/`_`.
- *   - `description` optional (warn if missing), ≤500 chars, single line.
- *   - `model` optional: `inherit`, a specific model ID, or `custom:<model>`.
- *   - `reasoningEffort` optional: `low` | `medium` | `high`.
- *   - `tools` optional: category strings or CASE-SENSITIVE tool IDs; no
- *     wildcards (`mcp__*__*` is invalid — use `mcpServers`).
- *   - `mcpServers` optional: array of server-name tokens.
+ * Validates Droid frontmatter in a `.md` file.
  *
- * Pure function: returns `{ valid, errors, warnings }`. `errors` are
- * load-blocking per DroidValidator; `warnings` are advisory.
+ * Checks required and optional Droid fields, including `name`, `description`,
+ * `model`, `reasoningEffort`, `tools`, and `mcpServers`.
+ *
+ * @returns Validation results with `errors` and `warnings`.
  */
 function validateDroidFrontmatter(content) {
   const errors = [];
@@ -2152,6 +2157,15 @@ function validateDroidFrontmatter(content) {
   return { valid: errors.length === 0, errors, warnings };
 }
 
+/**
+ * Converts a Claude agent into a Factory Droid subagent document.
+ *
+ * Preserves the body, normalizes the agent name, truncates the description to 500 characters, keeps only
+ * Factory Droid-compatible tools, and collects MCP server names from both the frontmatter and body.
+ * The generated document is validated and a warning is emitted if it does not satisfy the Droid schema.
+ *
+ * @returns The converted Droid agent markdown, or the original content when no frontmatter is present.
+ */
 function convertClaudeAgentToDroidAgent(content, _isGlobal = false) {
   const { frontmatter, body } = extractFrontmatterAndBody(content);
   if (!frontmatter) return content;
@@ -2469,14 +2483,17 @@ function _stampNonClaudeRuntimeDefaults(content: string, runtime: string): strin
 }
 
 /**
- * Apply the per-runtime rewrite table to a single content string.
- * Relocated from bin/install.js `_applyRuntimeRewrites`.
+ * Rewrites content for a target runtime.
  *
- * The 5th `attribution` param replaces the internal getCommitAttribution() call
- * so the function is pure (no config I/O). Pass the resolved attribution value
- * from the installer; pass `undefined` to leave Co-Authored-By lines untouched.
+ * Applies runtime-specific path, branding, and attribution rewrites to a single
+ * markdown string.
  *
- * @private — exported as `_applyRuntimeRewrites` for tests.
+ * @param content - The source content to rewrite
+ * @param runtime - The target runtime name
+ * @param pathPrefix - The absolute or home-relative prefix to use for rewritten paths
+ * @param isGlobal - Whether the install targets a global runtime location
+ * @param attribution - The attribution line to apply, or `undefined` to leave attribution unchanged
+ * @returns The rewritten content
  */
 function _applyRuntimeRewrites(content, runtime, pathPrefix, isGlobal = false, attribution = undefined) {
   const dirName = getDirName(runtime);

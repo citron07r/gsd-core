@@ -509,6 +509,11 @@ if (hasMinimal && _profileArgRaw) {
   process.exit(1);
 }
 
+/**
+ * Selects runtimes requested by CLI flags.
+ * @param {string[]} runtimeArgs - The parsed runtime-related arguments.
+ * @return {string[]} The selected runtime names, in a fixed order.
+ */
 function selectRuntimesFromArgs(runtimeArgs) {
   if (runtimeArgs.includes('--all')) {
     return ['claude', 'kimi', 'kilo', 'opencode', 'codex', 'copilot', 'antigravity', 'cursor', 'windsurf', 'augment', 'trae', 'qwen', 'hermes', 'codebuddy', 'cline', 'zcode', 'droid', 'pi', 'junie'];
@@ -8278,6 +8283,15 @@ function reportInstallerMigrationResult(result) {
   }
 }
 
+/**
+ * Installs GSD assets for a runtime at the selected config location.
+ *
+ * @param {boolean} isGlobal - Installs into the runtime's global config directory when true.
+ * @param {string} [runtime=DEFAULT_RUNTIME] - The target runtime to install for.
+ * @param {Object} [options={}] - Install options.
+ * @param {Array} [options.installerMigrations] - Optional installer migration plan overrides.
+ * @return {Object|undefined} The install result, or `undefined` when settings configuration is skipped.
+ */
 function install(isGlobal, runtime = DEFAULT_RUNTIME, options = {}) {
   const { isOpencode, isKilo, isZcode, isCodex, isCopilot, isAntigravity, isCursor, isWindsurf, isAugment, isTrae, isQwen, isHermes, isCodebuddy, isCline, isKimi } = runtimeFlags(runtime);
   const plan = resolveInstallPlan(runtime);
@@ -10552,9 +10566,8 @@ const allRuntimes = ['claude', 'antigravity', 'augment', 'cline', 'codebuddy', '
 const ALL_RUNTIMES_OPTION = '20';
 
 /**
- * Build the runtime-selection prompt text shown by the interactive installer.
- * Pure function — no I/O. Exported for tests so they can assert against the
- * rendered prompt instead of grepping bin/install.js source text.
+ * Builds the interactive runtime-selection prompt text.
+ * @return {string} The rendered prompt text.
  */
 function buildRuntimePromptText() {
   return `  ${yellow}Which runtime(s) would you like to install for?${reset}\n\n  ${cyan}1${reset}) Claude Code  ${dim}(~/.claude)${reset}
